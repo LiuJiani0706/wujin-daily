@@ -1,0 +1,63 @@
+/* =========================================================
+   手机端：保留 1600×900 / 1920×1080 桌面版式，只做两件事
+   1. 竖屏时盖一层「请横屏」提示
+   2. 横屏时按原有缩放逻辑铺满屏幕
+   ========================================================= */
+
+#rotateHint { display: none; }
+
+@media (max-width: 900px) and (orientation: portrait) {
+  #rotateHint {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 32px 28px;
+    text-align: center;
+    background:
+      radial-gradient(circle at 50% 42%, rgba(214,164,98,.16), transparent 62%),
+      #120c08;
+    color: #f2e4c8;
+    font-family: "Songti SC", "Noto Serif SC", serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #rotateHint .rh-phone {
+    width: 74px;
+    height: 74px;
+    color: #d8a55e;
+    animation: rh-turn 2.6s ease-in-out infinite;
+  }
+  #rotateHint .rh-title {
+    font-size: 20px;
+    letter-spacing: .22em;
+    text-indent: .22em;
+  }
+  #rotateHint .rh-sub {
+    font-size: 13px;
+    line-height: 1.9;
+    color: #b9a689;
+    letter-spacing: .06em;
+    max-width: 260px;
+  }
+  #rotateHint .rh-rule {
+    width: 54px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #8a6b41, transparent);
+  }
+}
+
+@keyframes rh-turn {
+  0%, 18%   { transform: rotate(0deg); }
+  50%, 68%  { transform: rotate(90deg); }
+  100%      { transform: rotate(0deg); }
+}
+
+/* 横屏手机：贴边安全区，避免刘海与底部手势条压住报头/按钮 */
+@media (max-height: 520px) and (orientation: landscape) and (pointer: coarse) {
+  body { overscroll-behavior: none; }
+  .title-meta { padding-top: env(safe-area-inset-top); }
+}

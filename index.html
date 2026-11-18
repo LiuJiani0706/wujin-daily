@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>雾津日报 · 报老板不好当</title>
+  <link rel="stylesheet" href="src/styles.css">
+  <link rel="stylesheet" href="src/title.css">
+  <link rel="stylesheet" href="src/report.css">
+  <link rel="stylesheet" href="proto/mobile.css">
+</head>
+<body>
+
+  <!-- ==================== 标题页 ==================== -->
+  <section class="title-screen" id="titleScreen" aria-label="雾津日报 · 开始页面">
+    <div class="title-bg" aria-hidden="true"></div>
+    <div class="title-grain" aria-hidden="true"></div>
+
+    <!-- 顶部元信息 -->
+    <div class="title-meta">
+      <span>民国十三年</span><i></i>
+      <span>雾津市</span><i></i>
+      <span>创刊第一一二年</span>
+    </div>
+
+    <!-- 主视觉 -->
+    <div class="title-stage">
+      <div class="masthead-card">
+        <img class="masthead-logo" src="game_assets/masthead/logo_classic_trim.png" alt="雾津日报">
+      </div>
+
+      <h1 class="game-title">报老板不好当</h1>
+      <p class="game-subtitle">这座城每天发生很多事，但只有你，能决定明天的人们会读到什么。</p>
+
+      <nav class="title-actions">
+        <button class="title-btn primary" onclick="startGame()">开始新的一天</button>
+        <button class="title-btn ghost" onclick="openTitleModal('howto')">玩法说明</button>
+        <button class="title-btn ghost" onclick="openTitleModal('credits')">制作名单</button>
+      </nav>
+    </div>
+
+    <!-- 右侧立绘 -->
+    <div class="title-portrait" aria-hidden="true">
+      <img src="game_assets/portrait/boss_elderly.jpg" alt="">
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="title-footer">
+      <div class="title-foot-left">
+        <span>互动叙事</span><i>·</i>
+        <span>新闻伦理</span><i>·</i>
+        <span>约 15 分钟</span><i>·</i>
+        <span>建议戴耳机</span>
+      </div>
+      <div class="title-foot-right">
+        <button class="icon-btn" id="soundBtn" aria-pressed="false" aria-label="声音开关" onclick="toggleSound()">
+          <svg class="icon-sound" viewBox="0 0 24 24"><path d="M4 9v6h3.5L13 19V5L7.5 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+          <svg class="icon-muted" viewBox="0 0 24 24"><path d="M4 9v6h3.5L13 19V5L7.5 9z"/><path d="M17 9.5l4 5M21 9.5l-4 5"/></svg>
+        </button>
+        <button class="icon-btn" aria-label="玩法说明" onclick="openTitleModal('howto')">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+        </button>
+        <span class="title-ver">v4.0</span>
+      </div>
+    </footer>
+  </section>
+
+  <!-- 玩法说明 / 制作名单 -->
+  <div class="title-modal" id="titleModal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card">
+      <button class="modal-close" aria-label="关闭" onclick="closeTitleModal()">×</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- 预算 -->
+  <div class="cash-display hidden" id="cashDisplay">账上 80</div>
+
+  <div class="game-container">
+
+    <!-- 游戏区 -->
+    <div id="gameScreen" class="hidden">
+      <div class="topbar">
+        <div class="ep-label" id="epLabel"></div>
+        <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="step-count" id="stepCount"></div>
+      </div>
+      <div id="stepContent"></div>
+    </div>
+
+    <!-- 每期结束 -->
+    <div id="episodeEnd" class="hidden"></div>
+
+    <!-- 三个月后 -->
+    <div id="epilogueScreen" class="hidden"></div>
+
+    <!-- 报告 -->
+    <div id="resultScreen" class="hidden"></div>
+  </div>
+
+  <!-- 两秒反馈条 -->
+  <div id="toast"></div>
+
+  <script src="src/data.js"></script>
+  <script src="src/engine.js"></script>
+  <script src="src/ui.js"></script>
+  <script src="src/report.js"></script>
+
+  <script>
+    let epIndex = 0;
+    let stepIndex = 0;
+    let curStep = null;
+    let curEpisode = null;
+    let epChoices = null;
+    let locked = false;
+
+    const $ = id => document.getElementById(id);
+
+    // ---------- 标题页 ----------
+    const MODAL_CONTENT = {
+      howto: `
+        <div class="modal-eyebrow">HOW TO PLAY</div>
+        <h3>开张之前，先说几句</h3>
+        <p>你接手了《雾津日报》。</p>
+        <p>这张报纸已经办了 112 年。以前由你祖父管，后来是你父亲，现在轮到你了。</p>
+        <p>报社有三十来号人，一台比你父亲还难伺候的老印刷机，还有几位不能轻易得罪的广告主。</p>
+        <p>接下来，你要负责三期报纸的头版。</p>
+        <p><b>每天都有新闻，但头版只能放最重要的。</b></p>
+        <p>你要决定报道什么、从哪个角度讲、用什么标题、派谁去采访。等稿子差不多定了，还得应付几个电话：广告主有意见，董事会不高兴，有时候连新闻当事人也会要求你改稿。</p>
+        <p>最麻烦的消息，往往在付印前才来。</p>
+        <p>你需要阅读编辑部送来的消息，在每个环节作出选择。你的同事会给建议，但他们未必赞同彼此，也不一定知道全部真相。</p>
+        <p>选择之前，你不会看到加分减分。选完之后，屏幕下方会短暂显示这个决定带来的影响。</p>
+        <p>你要顾及读者的信任、报社的独立、普通人的处境，也不能忘记账上还剩多少钱。</p>
+        <p>三期结束，你会看到自己究竟办出了一张怎样的报纸。</p>
+        <p>最后提醒：报纸可以没有头条，但账上不能没有钱。</p>
+        <p class="modal-note">好了，八点了。何叔已经在编辑部等你。</p>`,
+      credits: `
+        <div class="modal-eyebrow">CREDITS</div>
+        <h3>制作名单</h3>
+        <p>《雾津日报》· 报老板不好当<br>互动叙事 · 新闻伦理 · 约 15 分钟</p>
+        <p>剧本与文案　LIA<br>界面与前端　原生 HTML · CSS · JavaScript<br>设计文档　v4.0</p>
+        <p class="modal-note">雾津市、本报及其中人物均为虚构；报格与结局由你的每一次签字决定。</p>`
+    };
+
+    function openTitleModal(kind) {
+      const modal = $("titleModal");
+      $("modalBody").innerHTML = MODAL_CONTENT[kind] || "";
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+      modal.querySelector(".modal-close").focus();
+    }
+
+    function closeTitleModal() {
+      const modal = $("titleModal");
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function toggleSound() {
+      const btn = $("soundBtn");
+      btn.setAttribute("aria-pressed", btn.getAttribute("aria-pressed") === "true" ? "false" : "true");
+    }
+
+    $("titleModal").addEventListener("click", e => {
+      if (e.target === $("titleModal")) closeTitleModal();
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape") closeTitleModal();
+    });
+
+    function startGame() {
+      const title = $("titleScreen");
+      title.classList.add("is-leaving");
+      setTimeout(() => { title.style.display = "none"; }, 700);
+      $("gameScreen").classList.remove("hidden");
+      $("cashDisplay").classList.remove("hidden");
+      epIndex = 0;
+      startEpisode();
+    }
+
+    function startEpisode() {
+      curEpisode = GAME_DATA.episodes[epIndex];
+      epChoices = { topic: null, frame: null, headline: null, reporter: null, pressures: [], twist: null };
+      stepIndex = 0;
+      showEpisodeIntro();
+    }
+
+    function showEpisodeIntro() {
+      const ep = curEpisode;
+      $("epLabel").textContent = `${ep.no} · ${ep.title}`;
+      $("stepCount").textContent = "";
+      $("progressFill").style.width = "0%";
+      $("stepContent").innerHTML = `
+        <div class="episode-intro fade-in">
+          <div class="ep-date">${ep.day}　${ep.time}</div>
+          <h2 class="ep-title">${ep.title}</h2>
+          ${ep.intro.map(t => `<p>${t}</p>`).join("")}
+          <button class="btn-primary" onclick="runStep()">开始这一天 →</button>
+        </div>`;
+    }
+
+    function runStep() {
+      if (stepIndex >= curEpisode.steps.length) { finishEpisode(); return; }
+      curStep = curEpisode.steps[stepIndex];
+      locked = false;
+
+      const total = curEpisode.steps.length;
+      $("stepCount").textContent = `${stepIndex + 1} / ${total}`;
+      $("progressFill").style.width = `${(stepIndex / total) * 100}%`;
+
+      const content = $("stepContent");
+      content.innerHTML = renderStep(curStep);
+      content.classList.remove("fade-in");
+      void content.offsetWidth;
+      content.classList.add("fade-in");
+    }
+
+    function chooseOption(id) {
+      if (locked) return;
+      const opt = curStep.options.find(o => o.id === id);
+      if (!opt) return;
+      locked = true;
+
+      const result = applyDelta(opt.delta);
+      logChoice(curEpisode, curStep, opt, result);
+      recordChoice(curStep, opt);
+      showToast(result);
+      updateCash();
+
+      stepIndex++;
+
+      if (gameState.cash <= 0) {
+        gameState.stopped = true;
+        setTimeout(finishEpisode, 500);
+        return;
+      }
+      setTimeout(runStep, 400);
+    }
+
+    function recordChoice(step, opt) {
+      switch (step.type) {
+        case "topic": epChoices.topic = opt; break;
+        case "frame": epChoices.frame = opt; break;
+        case "headline": epChoices.headline = opt; break;
+        case "reporter": epChoices.reporter = opt; break;
+        case "pressure": epChoices.pressures.push(opt); break;
+        case "twist": epChoices.twist = opt; break;
+      }
+    }
+
+    function updateCash() {
+      $("cashDisplay").textContent = `账上 ${gameState.cash}`;
+      $("cashDisplay").classList.toggle("negative", gameState.cash < 30);
+    }
+
+    function finishEpisode() {
+      snapshotEpisode(curEpisode);
+      gameState.episodeChoices.push(epChoices);
+      $("progressFill").style.width = "100%";
+
+      if (gameState.stopped) { showStopped(); return; }
+
+      const isLast = epIndex >= GAME_DATA.episodes.length - 1;
+      const headline = epChoices.headline ? epChoices.headline.label : (epChoices.topic ? epChoices.topic.label : "");
+
+      $("gameScreen").classList.add("hidden");
+      const end = $("episodeEnd");
+      end.classList.remove("hidden");
+      end.innerHTML = `
+        <div class="episode-intro fade-in">
+          <div class="ep-date">${curEpisode.no} 付印</div>
+          <h2 class="ep-title">报纸开印了</h2>
+          <div class="printed-headline">${headline.replace(/[《》]/g, "")}</div>
+          <p class="muted">印刷机的声音隔着两层楼都能听见。你回到办公室，桌上已经堆着明天的素材。</p>
+          <button class="btn-primary" onclick="nextEpisode()">${isLast ? "收工 →" : "进入下一期 →"}</button>
+        </div>`;
+    }
+
+    function nextEpisode() {
+      $("episodeEnd").classList.add("hidden");
+      epIndex++;
+      if (epIndex >= GAME_DATA.episodes.length) { showEpilogue(); return; }
+      $("gameScreen").classList.remove("hidden");
+      startEpisode();
+    }
+
+    function showStopped() {
+      $("gameScreen").classList.add("hidden");
+      const end = $("episodeEnd");
+      end.classList.remove("hidden");
+      end.innerHTML = `
+        <div class="episode-intro fade-in">
+          <div class="ep-date">${curEpisode.no}　凌晨</div>
+          <h2 class="ep-title">这一期没能印出来</h2>
+          <p>账上已经没有钱了。纸厂的账、印刷厂的工资、记者的差旅，全都停在那里。</p>
+          <p class="muted">《雾津日报》第一次在早晨没有出现在报摊上。</p>
+          <button class="btn-primary" onclick="showResult()">看结算 →</button>
+        </div>`;
+    }
+
+    function showEpilogue() {
+      const e = computeEpilogue();
+      $("gameScreen").classList.add("hidden");
+      const s = $("epilogueScreen");
+      s.classList.remove("hidden");
+      s.innerHTML = `
+        <div class="epilogue fade-in">
+          <div class="ep-date">三个月后 · 雾津</div>
+          <div class="big-number">${e.cases}</div>
+          <div class="big-caption">第三码头相关病例累计</div>
+          <p class="epilogue-text">${e.delta > 0
+            ? `比你在那个早晨看到的二十七个，多了 ${e.delta} 个。有些是新的，有些是一直没被算进去的。`
+            : "比你在那个早晨看到的二十七个，少了三个——那三个人被重新归类了。"}</p>
+          <p class="epilogue-text">${e.recovered}</p>
+          <button class="btn-primary" onclick="showResult()">看这三天的结算 →</button>
+        </div>`;
+    }
+
+    function showResult() {
+      $("gameScreen").classList.add("hidden");
+      $("episodeEnd").classList.add("hidden");
+      $("epilogueScreen").classList.add("hidden");
+      $("cashDisplay").classList.add("hidden");
+
+      const screen = $("resultScreen");
+      screen.classList.remove("hidden");
+      screen.innerHTML = generateFullReport(gameState);
+
+      setTimeout(() => {
+        renderRadarChart("radarChart", gameState.scores);
+        renderPositionChart("positionChart", gameState.position);
+        renderTrendChart("trendChart", gameState.snapshots);
+        renderFrontPages("newspaperCanvas", gameState);
+      }, 60);
+    }
+
+    window.startGame = startGame;
+    window.runStep = runStep;
+    window.chooseOption = chooseOption;
+    window.nextEpisode = nextEpisode;
+    window.showResult = showResult;
+  </script>
+
+  <div id="rotateHint" aria-hidden="true">
+    <svg class="rh-phone" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="22" y="10" width="20" height="44" rx="4"></rect>
+      <line x1="28" y1="49" x2="36" y2="49"></line>
+      <path d="M50 26a18 18 0 0 1 4 11"></path>
+      <path d="M54 20v6h-6"></path>
+    </svg>
+    <div class="rh-rule"></div>
+    <div class="rh-title">请把手机横过来</div>
+    <div class="rh-sub">这张报纸是横着排的。<br>转一下屏幕，报头、正文和结算版才摊得开。</div>
+  </div>
+  <script>
+  /* 手机端：首次点击时尝试进入全屏并锁定横屏（支持的浏览器生效） */
+  (function () {
+    if (!window.matchMedia || !matchMedia('(pointer: coarse)').matches) return;
+    function lockLandscape() {
+      var root = document.documentElement;
+      try {
+        if (root.requestFullscreen) root.requestFullscreen().catch(function () {});
+        else if (root.webkitRequestFullscreen) root.webkitRequestFullscreen();
+      } catch (e) {}
+      setTimeout(function () {
+        try {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(function () {});
+          }
+        } catch (e) {}
+      }, 120);
+    }
+    document.addEventListener('click', function once() {
+      document.removeEventListener('click', once);
+      lockLandscape();
+    }, { once: true });
+  })();
+  </script>
+</body>
+</html>
